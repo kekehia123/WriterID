@@ -7,7 +7,7 @@ import numpy as np
 import time
 import argparse
 import os
-from io_utils import load_data, LoadinRHS
+from io_utils import load_data, LoadinRHS, convertLabel2Num
 
 parser = argparse.ArgumentParser(description='Arguments for preprocessing.')
 parser.add_argument('--NClass', type=int, default=10, help='Number of class (10/107)')
@@ -15,13 +15,13 @@ parser.add_argument('--Epoch', type=int, default=200, help='Number of epochs')
 parser.add_argument('--MaxTol', type=int, default=30, help='Tolerance of epochs with no test loss decrease')
 parser.add_argument('--LR', type=float, default=0.001, help='Initial learning rate')
 parser.add_argument('--ResumeModel', type=bool, default=False, help='Whether resume existing model')
-parser.add_argument('--LenSample', type=int, default=20, help='Length of samples')
+#parser.add_argument('--LenSample', type=int, default=20, help='Length of samples')
 parser.add_argument('--NSample', type=int, default=5, help='Number of samples')
 parser.add_argument('--BatchSize', type=int, default=200, help='Number of samples')
 parser.add_argument('--Vote', type=bool, default=True, help='Number of samples')
-parser.add_argument('--ModelName', type=str, default='standard_mean_pooling_10', help=' ')
+parser.add_argument('--ModelName', type=str, default='standard_10', help=' ')
 parser.add_argument('--InputFile', type=str, default='SampleRHS_singleChar_10', help=' ')
-parser.add_argument('--ModelType', type=str, default='mean_pooling', help='single direction or bidirection')
+parser.add_argument('--ModelType', type=str, default='standard', help='single direction or bidirection')
 
 args = parser.parse_args()
 NumOfCategory = args.NClass
@@ -30,13 +30,14 @@ maxTol = args.MaxTol
 learning_rate = args.LR
 resume_model = args.ResumeModel
 NumofSamples = args.NSample
-LenOfSample = args.LenSample
+#LenOfSample = args.LenSample
 BATCH_SIZE = args.BatchSize
 vote = args.Vote
 model_name = args.ModelName
 input_file_name = args.InputFile
 model_type = args.ModelType
 
+assert model_type in ['standard', 'bidirectional', 'mean_pooling']
 save_dir = os.path.join('models', model_name)
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
@@ -221,10 +222,12 @@ print('Loading. Please wait... It may take 2-3 minutes')
 since = time.time()
 SampleRHS = LoadinRHS(input_file)
 
-Train_loader, _ = load_data(SampleRHS['Train_RHS_Sample'],
+Train_loader = load_data(SampleRHS['Train_RHS_Sample'],
                          SampleRHS['Train_RHS_Label_Sample'], BATCH_SIZE, True)
-Validation_loader, Validation_Label_List = load_data(SampleRHS['Validation_RHS_Sample'],
-                                                     SampleRHS['Validation_RHS_Label_Sample'], 1, False)
+Validation_loader = load_data(SampleRHS['Validation_RHS_Sample'],
+                              SampleRHS['Validation_RHS_Label_Sample'], BATCH_SIZE, False)
+Validation_Label_List, _ = convertLabel2Num(SampleRHS['Validation_RHS_Label_Sample'])
+
 n_samples_train, n_samples_val = SampleRHS['Train_NSamples'], SampleRHS['Validation_NSamples']
 LenTrain = len(SampleRHS['Train_RHS_Label_Sample'])
 LenValidation = len(SampleRHS['Validation_RHS_Label_Sample'])
@@ -261,15 +264,19 @@ if resume_model:
     epoch = checkpoint['epoch']
 
 for epoch in range(EPOCH):
+    start_time = time.time()
     model, train_acc, train_loss = train(model, Train_loader, criterion, optimizer, scheduler, epoch)
+    train_endTime = time.time()
     test_single_acc, test_vote_acc, test_loss = test(model, Validation_loader, criterion, epoch,
                                           vote, n_samples_val, Validation_Label_List)
+    test_endTime = time.time()
     train_acc_history.append(train_acc)
     test_single_acc_history.append(test_single_acc)
     test_vote_acc_history.append(test_vote_acc)
     train_loss_history.append(train_loss)
     test_loss_history.append(test_loss)
     print('Training loss: %f, Test loss: %f' % (train_loss, test_loss))
+    print('Training time: %.2f s, Test time: %.2f s' % (train_endTime - start_time, test_endTime - train_endTime))
     if test_single_acc > best_acc:
         best_acc = test_single_acc
         #best_loss = test_loss
