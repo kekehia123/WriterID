@@ -5,12 +5,12 @@ import os
 
 # Here, I
 parser = argparse.ArgumentParser(description='Arguments for preprocessing.')
-parser.add_argument('--NClass', type=int, default=10, help='Number of class (10/107)')
-parser.add_argument('--LenSample', type=int, default=10, help='Length of samples')
+parser.add_argument('--NClass', type=int, default=107, help='Number of class (10/107)')
+parser.add_argument('--LenSample', type=int, default=20, help='Length of samples')
 parser.add_argument('--NSample', type=int, default=5, help='Number of samples')
 parser.add_argument('--FlexibleNSample', type=bool, default=True, help='Whether to decide N samples according to the char length')
 parser.add_argument('--BadThreshold', type=int, default=5, help=' ')
-parser.add_argument('--FileName', type=str, default='SampleRHS_singleChar_len10_10', help=' ')
+parser.add_argument('--FileName', type=str, default='SampleRHS_singleChar_len20_107', help=' ')
 
 args = parser.parse_args()
 NClass = args.NClass
@@ -53,8 +53,8 @@ def SwitchAxes_singleChar(Word):
 def CreateRHS_singleChar(data_newAxis, LenOfSample, NumOfSample):
     data_sampled = []
 
-    if len(data_newAxis[0]) <= LenOfSample + NumOfSample:
-        n_sample = 3
+    if len(data_newAxis[0]) <= LenOfSample:
+        n_sample = NumOfSample
         for i in range(n_sample):
             start_point = i
             one_sample = []
@@ -64,7 +64,7 @@ def CreateRHS_singleChar(data_newAxis, LenOfSample, NumOfSample):
             data_sampled.append(one_sample)
     else:
         if FlexibleNSample:
-            n_sample = max(NumOfSample, len(data_newAxis[0]) // NumOfSample)
+            n_sample = len(data_newAxis[0]) // 5
         else:
             n_sample = NumOfSample
         for i in range(n_sample):
@@ -134,6 +134,7 @@ for i in range(len(train_files)):
             Train_RHS_Sample.append(data_sampled[k])
             Train_RHS_Label_Sample.append(file_sub)
         n_samples_train.append(n_sample)
+print('Length of training samples:', len(Train_RHS_Sample))
 print('Number of training samples smaller that LenOfSample:', num_lessLen)
 
 charLen_val = []
@@ -155,6 +156,7 @@ for i in range(len(val_files)):
             Validation_RHS_Sample.append(data_sampled[k])
             Validation_RHS_Label_Sample.append(file_sub)
         n_samples_val.append(n_sample)
+print('Length of validation samples:', len(Validation_RHS_Sample))
 print('Number of validation samples smaller that LenOfSample:', num_lessLen)
 
 SampleRHS = dict(Train_RHS_Sample=Train_RHS_Sample, Train_RHS_Label_Sample=Train_RHS_Label_Sample,
