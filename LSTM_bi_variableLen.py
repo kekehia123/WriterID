@@ -19,9 +19,8 @@ parser.add_argument('--LenSample', type=int, default=20, help='Length of samples
 parser.add_argument('--NSample', type=int, default=5, help='Number of samples')
 parser.add_argument('--BatchSize', type=int, default=200, help='Number of samples')
 parser.add_argument('--Vote', type=bool, default=True, help='Number of samples')
-parser.add_argument('--ModelName', type=str, default='standard_mean_pooling_10', help=' ')
+parser.add_argument('--ModelName', type=str, default='standard_10', help=' ')
 parser.add_argument('--InputFile', type=str, default='SampleRHS_singleChar_10', help=' ')
-parser.add_argument('--ModelType', type=str, default='mean_pooling', help='single direction or bidirection')
 
 args = parser.parse_args()
 NumOfCategory = args.NClass
@@ -35,20 +34,13 @@ BATCH_SIZE = args.BatchSize
 vote = args.Vote
 model_name = args.ModelName
 input_file_name = args.InputFile
-model_type = args.ModelType
+
+assert NumOfCategory in [10, 107]
+input_file = os.path.join('prepared_data', input_file_name+'.txt')
 
 save_dir = os.path.join('models', model_name)
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
-
-f = open(os.path.join(save_dir, 'configs.txt'), 'w')
-for arg in vars(args):
-    f.writelines(arg + ' ' + str(getattr(args, arg)) + '\n')
-    print(arg, getattr(args, arg))
-f.close()
-
-assert NumOfCategory in [10, 107]
-input_file = os.path.join('prepared_data', input_file_name+'.txt')
 
 use_gpu = torch.cuda.is_available()
 
@@ -60,31 +52,18 @@ class LSTM(nn.Module):
         # dimensions of the input feature
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        if model_type == 'standard':
-            self.lstm = nn.LSTM(in_dim, hidden_dim, n_layer,
-                                batch_first=True)
-            # self.out = nn.Linear(hidden_dim, n_class)
-            self.classifier = nn.Linear(hidden_dim, n_class)
-        elif model_type == 'bidirectional':
-            self.lstm = nn.LSTM(in_dim, hidden_dim, n_layer,
-                                batch_first=True, bidirectional=True)
-            # self.out = nn.Linear(hidden_dim, n_class)
-            self.classifier = nn.Linear(hidden_dim*2, n_class)
-        elif model_type == 'mean_pooling':
-            self.lstm = nn.LSTM(in_dim, hidden_dim, n_layer,
-                                batch_first=True, bidirectional=True)
-            self.classifier = nn.Linear(hidden_dim, n_class)
+        self.lstm = nn.LSTM(in_dim, hidden_dim, n_layer,
+                            batch_first=True)
+        # self.out = nn.Linear(hidden_dim, n_class)
+        self.classifier = nn.Linear(hidden_dim, n_class)
 
     def forward(self, x, x_lengths):
         self.lstm.flatten_parameters()
         x = pack_padded_sequence(x, x_lengths.cpu().numpy(), batch_first = True)
         out, (ht, ct) = self.lstm(x)
         out, _ = pad_packed_sequence(out, batch_first=True)
-        out = out[:, -1, :]
-        if model_type == 'mean_pooling':
-            out = 0.5 * (out[:, :self.hidden_dim] + out[:, self.hidden_dim:])
-        #ht = ht.view(-1, ht.size()[-1])
-        out = self.classifier(out)
+        ht = ht.view(-1, ht.size()[-1])
+        out = self.classifier(ht)
         return out
 
 # LSTM会返回每一个RHS sample的分类结果，由于每个学生有NumofSamples个sample，因此可以进行投票，返回最终判断
@@ -236,9 +215,6 @@ model = LSTM(in_dim=2, hidden_dim=100, n_layer=1, n_class=NumOfCategory)
 # print(model)
 if use_gpu:
     model = model.cuda()
-
-para_num = sum([p.data.nelement() for p in model.parameters()])
-print('Total number of parameters:', para_num)
 
 # 一下损失函数、优化器和学习率调整都可以修改
 criterion = torch.nn.CrossEntropyLoss()
