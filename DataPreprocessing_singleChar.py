@@ -6,11 +6,11 @@ import os
 # Here, I
 parser = argparse.ArgumentParser(description='Arguments for preprocessing.')
 parser.add_argument('--NClass', type=int, default=10, help='Number of class (10/107)')
-parser.add_argument('--LenSample', type=int, default=20, help='Length of samples')
+parser.add_argument('--LenSample', type=int, default=10, help='Length of samples')
 parser.add_argument('--NSample', type=int, default=5, help='Number of samples')
-parser.add_argument('--FlexibleNSample', type=bool, default=False, help='Whether to decide N samples according to the char length')
+parser.add_argument('--FlexibleNSample', type=bool, default=True, help='Whether to decide N samples according to the char length')
 parser.add_argument('--BadThreshold', type=int, default=5, help=' ')
-parser.add_argument('--FileName', type=str, default='SampleRHS_singleChar_univSample_10', help=' ')
+parser.add_argument('--FileName', type=str, default='SampleRHS_singleChar_len10_10', help=' ')
 
 args = parser.parse_args()
 NClass = args.NClass
@@ -19,6 +19,9 @@ LenOfSample = args.LenSample
 BadCharThr = args.BadThreshold
 FlexibleNSample = args.FlexibleNSample
 FileName = args.FileName
+
+for arg in vars(args):
+    print(arg, getattr(args, arg))
 
 # parameters setting
 data_root = '/data/data_nTGG0ILaS1qu/WriterID'
