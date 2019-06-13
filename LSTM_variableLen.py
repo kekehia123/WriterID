@@ -23,6 +23,7 @@ parser.add_argument('--ModelName', type=str, default='standard_10', help=' ')
 parser.add_argument('--InputFile', type=str, default='SampleRHS_singleChar_len20_10', help=' ')
 parser.add_argument('--ModelType', type=str, default='standard', help='single direction or bidirectional (whether use mean pooling)')
 parser.add_argument('--LSTMLayer', type=int, default=1, help='single direction or bidirection')
+parser.add_argument('--LSTMHiddenDim', type=int, default=128, help='single direction or bidirection')
 
 args = parser.parse_args()
 NumOfCategory = args.NClass
@@ -38,6 +39,7 @@ model_name = args.ModelName
 input_file_name = args.InputFile
 model_type = args.ModelType
 LSTM_layer = args.LSTMLayer
+LSTM_hiddenDim = args.LSTMHiddenDim
 
 assert model_type in ['standard', 'bidirectional', 'mean_pooling']
 save_dir = os.path.join('models', model_name)
@@ -237,7 +239,7 @@ print('Number of Training data: ', LenTrain)
 print('Number of Validation data: ', LenValidation)
 
 # Hidden_dim is determined by the needs
-model = LSTM(in_dim=2, hidden_dim=128, n_layer=LSTM_layer, n_class=NumOfCategory)
+model = LSTM(in_dim=2, hidden_dim=LSTM_hiddenDim, n_layer=LSTM_layer, n_class=NumOfCategory)
 # print(model)
 if use_gpu:
     model = model.cuda()
