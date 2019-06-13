@@ -14,6 +14,7 @@ parser.add_argument('--NClass', type=int, default=10, help='Number of class (10/
 parser.add_argument('--Epoch', type=int, default=200, help='Number of epochs')
 parser.add_argument('--MaxTol', type=int, default=30, help='Tolerance of epochs with no test loss decrease')
 parser.add_argument('--LR', type=float, default=0.001, help='Initial learning rate')
+parser.add_argument('--Gamma', type=float, default=0.6, help='Decay rate in learning')
 parser.add_argument('--ResumeModel', type=bool, default=False, help='Whether resume existing model')
 #parser.add_argument('--LenSample', type=int, default=20, help='Length of samples')
 #parser.add_argument('--NSample', type=int, default=5, help='Number of samples')
@@ -22,7 +23,7 @@ parser.add_argument('--Vote', type=bool, default=True, help='Number of samples')
 parser.add_argument('--ModelName', type=str, default='standard_10', help=' ')
 parser.add_argument('--InputFile', type=str, default='SampleRHS_singleChar_len20_10', help=' ')
 parser.add_argument('--ModelType', type=str, default='standard', help='single direction or bidirectional (whether use mean pooling)')
-parser.add_argument('--LSTMLayer', type=int, default=1, help='single direction or bidirection')
+parser.add_argument('--LSTMLayer', type=int, default=1, help='layer of LSTM')
 parser.add_argument('--LSTMHiddenDim', type=int, default=128, help='single direction or bidirection')
 
 args = parser.parse_args()
@@ -30,6 +31,7 @@ NumOfCategory = args.NClass
 EPOCH = args.Epoch
 maxTol = args.MaxTol
 learning_rate = args.LR
+gamma = args.Gamma
 resume_model = args.ResumeModel
 #NumofSamples = args.NSample
 #LenOfSample = args.LenSample
@@ -251,7 +253,7 @@ print('Total number of parameters:', para_num)
 criterion = torch.nn.CrossEntropyLoss()
 # This weight_decay parameter was set to prevent overfitting
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)# weight_decay=1e-8)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.6)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=gamma)
 
 print('Training process started')
 train_acc_history = []
